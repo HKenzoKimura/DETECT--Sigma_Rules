@@ -1,1 +1,69 @@
+title: LNK Masquerading — Hidden Encoded PowerShell Execution
+id: e5f6a7b8-c9d0-1234-efab-345678901234
+status: test
+description: |
+  Detecta execução de PowerShell com comando encodado em Base64 (-EncodedCommand) e janela
+  oculta (-WindowStyle Hidden / -NonInteractive), gerado por um arquivo LNK (atalho Windows).
+  Essa combinação é assinatura de payloads de phishing via LNK que escondem o stager de download
+  de segunda fase. O parent process explorer.exe ou o próprio cmd.exe disparado a partir de
+  um arquivo .lnk é o contexto esperado.
+references:
+  - https://attack.mitre.org/techniques/T1204/002/
+  - https://attack.mitre.org/techniques/T1059/001/
+  - https://redcanary.com/threat-detection-report/techniques/powershell/
+author: HKK
+date: 2025/07/01
+modified: 2025/07/01
+tags:
+  - attack.execution
+  - attack.t1059.001
+  - attack.t1204.002
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_encoded:
+    EventID: 1
+    Image|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+    CommandLine|contains|all:
+      - '-EncodedCommand'   # ou variações como -Enc, -En
+      - '-WindowStyle'
+  selection_enc_short:
+    EventID: 1
+    Image|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+    CommandLine|contains|all:
+      - ' -enc '
+      - '-NonInteractive'
+  selection_parent_lnk:
+    EventID: 1
+    Image|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+    ParentImage|endswith:
+      - '\explorer.exe'
+      - '\cmd.exe'
+    CommandLine|contains:
+      - '-EncodedCommand'
+      - ' -enc '
+  filter_admin_tasks:
+    # Scripts de administração legítimos encodados raramente usam -WindowStyle Hidden junto
+    CurrentDirectory|startswith:
+      - 'C:\Windows\System32\'
+      - 'C:\Program Files\'
+  condition: (1 of selection_*) and not filter_admin_tasks
+falsepositives:
+  - Ferramentas de gerenciamento de endpoint que usam PowerShell encodado (ex: ManageEngine, Intune)
+  - Scripts de automação internos publicados via atalho para usuários
+  - Soluções de deploy de software que invocam PowerShell oculto
+fields:
+  - Image
+  - ParentImage
+  - CommandLine
+  - User
+  - CurrentDirectory
+level: high
 
