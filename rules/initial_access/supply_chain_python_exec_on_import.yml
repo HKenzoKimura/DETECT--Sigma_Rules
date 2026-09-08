@@ -1,1 +1,85 @@
+title: Supply Chain — Python Package Code Execution on Import (setup.py / __init__.py)
+id: d0e1f2a3-b4c5-6789-defa-890123456789
+status: test
+description: |
+  Detecta execução de código suspeito disparada durante importação de pacote Python —
+  padrão clássico de supply chain attack onde o payload está em setup.py, __init__.py
+  ou pyproject.toml e é executado no momento do `pip install` ou do primeiro `import`.
+  O indicador é python.exe ou pip.exe gerando processos de rede/sistema inesperados
+  (cmd, powershell, curl, certutil, conexão de rede) fora de um contexto de build/test.
+  ALTO POTENCIAL DE FALSO POSITIVO — requer baseline antes de produção.
+references:
+  - https://attack.mitre.org/techniques/T1195/001/
+  - https://blog.phylum.io/malicious-python-packages-use-setup-py-to-install-infostealer/
+author: HKK
+date: 2025/07/01
+modified: 2025/07/01
+tags:
+  - attack.initial_access
+  - attack.t1195.001
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_process_spawn:
+    # python/pip gerando shell ou ferramenta de download
+    EventID: 1
+    ParentImage|endswith:
+      - '\python.exe'
+      - '\python3.exe'
+      - '\pip.exe'
+      - '\pip3.exe'
+    Image|endswith:
+      - '\cmd.exe'
+      - '\powershell.exe'
+      - '\pwsh.exe'
+      - '\curl.exe'
+      - '\certutil.exe'
+      - '\bitsadmin.exe'
+      - '\mshta.exe'
+      - '\wscript.exe'
+  selection_network_from_pip:
+    # pip/python abrindo conexão de rede fora de PyPI e CDNs conhecidas — Sysmon EventID 3
+    EventID: 3
+    Image|endswith:
+      - '\python.exe'
+      - '\python3.exe'
+      - '\pip.exe'
+    Initiated: 'true'
+    DestinationPort:
+      - 4444    # Metasploit default
+      - 1337
+      - 8443
+      - 9001
+  filter_legit_pip:
+    # pip legítimo conecta em pypi.org / files.pythonhosted.org / cdn.jsdelivr.net
+    DestinationHostname|endswith:
+      - 'pypi.org'
+      - 'pythonhosted.org'
+      - 'jsdelivr.net'
+      - 'anaconda.com'
+  filter_dev_env:
+    # Ambientes de desenvolvimento são esperados para instalar pacotes e rodar scripts
+    CurrentDirectory|contains:
+      - '\venv\'
+      - '\.venv\'
+      - '\site-packages\'
+      - '\Scripts\'
+  condition: (selection_process_spawn or (selection_network_from_pip and not filter_legit_pip))
+             and not filter_dev_env
+falsepositives:
+  - ALTO — ambientes de desenvolvimento instalam pacotes que legítimamente executam
+    código de build (compilação de extensões C, download de binários via setup.py)
+  - Pacotes com hooks pós-instalação (ex: playwright install, selenium-manager)
+  - Pipelines de CI/CD que constroem e testam pacotes Python
+  - Ferramentas de data science com dependências binárias grandes
+fields:
+  - Image
+  - ParentImage
+  - CommandLine
+  - User
+  - CurrentDirectory
+  - DestinationIp
+  - DestinationHostname
+level: medium
 
