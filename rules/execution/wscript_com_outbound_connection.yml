@@ -1,1 +1,73 @@
+title: VBScript COM Download — wscript.exe Outbound Network Connection (MSXML2.XMLHTTP Bypass)
+id: f6a7b8c9-d0e1-2345-fabc-456789012345
+status: test
+description: |
+  Detecta conexão de rede de saída gerada diretamente pelo wscript.exe ou cscript.exe,
+  indicativo de uso de MSXML2.XMLHTTP / WinHttp.WinHttpRequest via COM para download
+  de payload — técnica que bypassa restrições de execução de rede impostas a processos
+  filhos, já que o objeto COM roda no contexto do próprio script host. Sysmon EventID 3
+  com wscript/cscript como processo de origem para destinos externos é altamente suspeito.
+references:
+  - https://attack.mitre.org/techniques/T1559/001/
+  - https://attack.mitre.org/techniques/T1071/001/
+  - https://lolbas-project.github.io/lolbas/Binaries/Wscript/
+author: HKK
+date: 2025/07/01
+modified: 2025/07/01
+tags:
+  - attack.execution
+  - attack.command_and_control
+  - attack.t1559.001
+  - attack.t1071.001
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection:
+    EventID: 3     # Network Connection
+    Image|endswith:
+      - '\wscript.exe'
+      - '\cscript.exe'
+    Initiated: 'true'   # Conexão de saída iniciada pelo processo (não inbound)
+  filter_intranet:
+    # Conexões para RFC1918 podem ser legítimas (ex: share de rede local via script)
+    DestinationIp|startswith:
+      - '10.'
+      - '172.16.'
+      - '172.17.'
+      - '172.18.'
+      - '172.19.'
+      - '172.20.'
+      - '172.21.'
+      - '172.22.'
+      - '172.23.'
+      - '172.24.'
+      - '172.25.'
+      - '172.26.'
+      - '172.27.'
+      - '172.28.'
+      - '172.29.'
+      - '172.30.'
+      - '172.31.'
+      - '192.168.'
+      - '127.'
+  filter_local_subnet:
+    DestinationIsIpv6: 'false'
+    DestinationPort:
+      - 137
+      - 138
+      - 139
+      - 445
+  condition: selection and not 1 of filter_*
+falsepositives:
+  - Scripts VBScript legítimos que fazem chamadas HTTP para APIs internas ou externas
+  - Automações de integração de sistemas (ex: SOAP via VBScript em ambientes SAP legado)
+  - Scripts de login que verificam conectividade via XMLHTTP
+fields:
+  - Image
+  - DestinationIp
+  - DestinationPort
+  - DestinationHostname
+  - User
+level: high
 
