@@ -93,7 +93,7 @@ Cada regra é derivada da seção **Detection Opportunities** dos repositórios 
 
 | Regra | Repo de Origem | Seção |
 |-------|---------------|-------|
-| Kerberoasting RC4 | [TOOLS--Kerberoasting](../TOOLS--Kerberoasting) | `$ cat ./detection_opportunities.md` |
+| Kerberoasting RC4 | [TOOLS--Kerberoasting](/TOOLS--Kerberoasting) | `$ cat ./detection_opportunities.md` |
 | Cached Credentials | [VULN--Unified_Mitigation_Suite](../VULN--Unified_Mitigation_Suite) | Mitigação ⑤ Cached Logon |
 | PrintNightmare (child + driver) | [CVE-2021-1675](../CVE-2021-1675) | `$ cat ./detection_opportunities.md` |
 | LNK Encoded PowerShell | [MALDEV--Suppy_Chain_Attack](../MALDEV--Suppy_Chain_Attack) | Design Decisions |
