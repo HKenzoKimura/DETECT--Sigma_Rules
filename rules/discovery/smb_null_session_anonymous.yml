@@ -1,1 +1,47 @@
+title: SMB Null Session — Anonymous Enumeration (Network Share and Account Discovery)
+id: e1f2a3b4-c5d6-7890-efab-901234567890
+status: test
+description: |
+  Detecta autenticação anônima via SMB (null session) — técnica usada para enumerar
+  compartilhamentos de rede, contas de usuário e informações de domínio sem credenciais.
+  O EventID 4624 com LogonType 3 (Network) e conta ANONYMOUS LOGON é o artefato direto.
+  Null sessions foram desabilitadas por padrão desde o Windows Server 2003, mas configurações
+  de GPO equivocadas ou sistemas legados podem reabilitá-las. Qualquer ocorrência deve ser
+  tratada como anômala em ambientes modernos.
+references:
+  - https://attack.mitre.org/techniques/T1135/
+  - https://attack.mitre.org/techniques/T1087/
+  - https://learn.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/network-access-restrict-anonymous-access-to-named-pipes-and-shares
+author: HKK
+date: 2025/07/01
+modified: 2025/07/01
+tags:
+  - attack.discovery
+  - attack.t1135
+  - attack.t1087
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4624                  # Logon bem-sucedido
+    LogonType: 3                   # Network logon
+    AccountName: 'ANONYMOUS LOGON'
+    AuthenticationPackageName: 'NTLM'
+  filter_expected_systems:
+    # Em alguns ambientes legados, IPC$ anônimo pode ser necessário para sistemas de impressão
+    # ou integração. Documentar e filtrar explicitamente — não usar esse filtro como padrão.
+    IpAddress: '0.0.0.0'          # Conexão local / loopback — não é enumeração remota
+  condition: selection and not filter_expected_systems
+falsepositives:
+  - Sistemas legados que dependem de IPC$ anônimo para integração (ex: impressoras antigas, NAS)
+  - Scanners de vulnerabilidade autorizados testando exposição de null session
+  - Ambientes de workgroup (sem AD) onde null session é mais comum
+fields:
+  - AccountName
+  - IpAddress
+  - WorkstationName
+  - LogonType
+  - AuthenticationPackageName
+level: medium
 
