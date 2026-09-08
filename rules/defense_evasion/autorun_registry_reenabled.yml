@@ -1,1 +1,53 @@
+title: AutoRun Re-enabled via Registry — Hardening Rollback (T1091)
+id: f2a3b4c5-d6e7-8901-fabc-012345678901
+status: test
+description: |
+  Detecta modificação de chaves de registro que reabilitam o AutoRun/AutoPlay do Windows —
+  controle que deve estar desabilitado por GPO/hardening. Reatualizá-lo via registro local
+  é um rollback de hardening clássico executado por malware de mídia removível (ex: worms
+  de USB) para garantir persistência e propagação lateral em máquinas sem políticas de grupo.
+  O EventID 13 do Sysmon (registry value set) cobre a modificação da chave NoDriveTypeAutoRun.
+references:
+  - https://attack.mitre.org/techniques/T1091/
+  - https://support.microsoft.com/en-us/topic/how-to-disable-the-autorun-functionality-in-windows-10-support-article-kb967715
+author: HKK
+date: 2025/07/01
+modified: 2025/07/01
+tags:
+  - attack.defense_evasion
+  - attack.lateral_movement
+  - attack.t1091
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_autorun_key:
+    EventID: 13    # Registry Value Set
+    TargetObject|contains:
+      - '\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer\NoDriveTypeAutoRun'
+      - '\SOFTWARE\Microsoft\Windows NT\CurrentVersion\IniFileMapping\Autorun.inf'
+    Details:
+      - 'DWORD (0x00000000)'   # NoDriveTypeAutoRun = 0 → AutoRun habilitado para TODOS os drives
+      - 'DWORD (0x00000091)'   # Valor padrão inseguro (habilita AutoRun em rede e removíveis)
+  selection_autoplay_key:
+    EventID: 13
+    TargetObject|endswith: '\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Disable'
+    Details: 'DWORD (0x00000000)'   # Disable = 0 → AutoPlay reabilitado
+  filter_gpo_process:
+    # Modificações via GPO (gpupdate) são esperadas se a política é de manutenção
+    Image|endswith:
+      - '\svchost.exe'
+      - '\gpupdate.exe'
+      - '\csrss.exe'
+  condition: (1 of selection_*) and not filter_gpo_process
+falsepositives:
+  - Administradores ajustando configuração de AutoPlay via ferramenta de gerenciamento
+  - Scripts de configuração pós-imagem que ainda não aplicaram GPO de hardening
+  - Software de quiosque ou toten que depende de AutoPlay para UX
+fields:
+  - Image
+  - TargetObject
+  - Details
+  - User
+level: medium
 
