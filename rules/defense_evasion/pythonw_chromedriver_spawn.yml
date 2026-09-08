@@ -1,1 +1,67 @@
+title: WhatsApp Spreader — pythonw.exe Spawning chromedriver.exe (Masquerading via Selenium)
+id: a7b8c9d0-e1f2-3456-abcd-567890123456
+status: test
+description: |
+  Detecta a cadeia de processo característica do WhatsApp Spreader: pythonw.exe (Python
+  sem console) gerando chromedriver.exe, indicativo de automação de browser via Selenium
+  para propagação de mensagens maliciosas no WhatsApp Web. O uso de pythonw.exe (não python.exe)
+  é deliberado para ocultar a janela de console do usuário. A combinação pythonw → chromedriver
+  é rara legitimamente fora de ambientes de desenvolvimento/QA — em endpoints corporativos,
+  é altamente suspeita.
+references:
+  - https://attack.mitre.org/techniques/T1534/
+  - https://attack.mitre.org/techniques/T1036/
+author: HKK
+date: 2025/07/01
+modified: 2025/07/01
+tags:
+  - attack.lateral_movement
+  - attack.defense_evasion
+  - attack.t1534
+  - attack.t1036
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_direct:
+    EventID: 1
+    ParentImage|endswith: '\pythonw.exe'
+    Image|endswith: '\chromedriver.exe'
+  selection_chain:
+    # Cobre variação onde o shell intermediário está presente
+    EventID: 1
+    ParentImage|endswith: '\pythonw.exe'
+    Image|endswith:
+      - '\chrome.exe'
+      - '\msedge.exe'
+      - '\chromedriver.exe'
+  selection_pythonw_suspicious:
+    # pythonw.exe gerado de local não-padrão (fora de Program Files/AppData) já é suspeito
+    EventID: 1
+    Image|endswith: '\pythonw.exe'
+    Image|not contains:
+      - '\Python3'
+      - '\Python2'
+      - '\Program Files'
+      - '\AppData\Local\Programs\Python'
+  filter_dev_paths:
+    # Ambientes de dev/QA com Selenium podem gerar esse padrão legitimamente
+    CurrentDirectory|contains:
+      - '\tests\'
+      - '\test\'
+      - '\selenium\'
+      - '\qa\'
+      - '\automation\'
+  condition: (1 of selection_*) and not filter_dev_paths
+falsepositives:
+  - Ambientes de QA e automação de testes com Selenium WebDriver
+  - Pipelines de CI/CD em agentes de build com Python + Chrome
+  - Ferramentas de RPA (Robotic Process Automation) baseadas em Selenium
+fields:
+  - Image
+  - ParentImage
+  - CommandLine
+  - User
+  - CurrentDirectory
+level: high
 
