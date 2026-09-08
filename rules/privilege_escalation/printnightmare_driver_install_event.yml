@@ -1,1 +1,46 @@
+title: PrintNightmare — Driver Install via RpcAddPrinterDriverEx (CVE-2021-1675)
+id: d4e5f6a7-b8c9-0123-defa-234567890123
+status: test
+description: |
+  Detecta instalação de driver de impressão via RpcAddPrinterDriverEx, vetor central
+  do PrintNightmare (CVE-2021-1675 / CVE-2021-34527). O EventID 316 é gerado quando
+  o Print Spooler tenta instalar um driver remotamente; o EventID 808 cobre erros no
+  processo de carga que podem indicar tentativa malsucedida. Em conjunto, cobrem tanto
+  a exploração bem-sucedida quanto tentativas de reconnaissance.
+references:
+  - https://attack.mitre.org/techniques/T1068/
+  - https://msrc.microsoft.com/update-guide/vulnerability/CVE-2021-1675
+  - https://www.kb.cert.org/vuls/id/383432
+author: HKK
+date: 2025/07/01
+modified: 2025/07/01
+tags:
+  - attack.privilege_escalation
+  - attack.t1068
+logsource:
+  product: windows
+  service: printservice-admin      # Microsoft-Windows-PrintService/Admin
+detection:
+  selection_driver_install:
+    EventID: 316                   # PrintService: driver instalado via RPC
+    Message|contains:
+      - 'RpcAddPrinterDriverEx'
+      - 'kernel32.dll'
+      - '.dll'
+  selection_driver_load_error:
+    EventID: 808                   # PrintService: falha ao carregar driver (tentativa)
+  filter_legit_admin_install:
+    # Instalaçoes legítimas via GPO ou admin console tendem a vir de System ou do domínio
+    SubjectUserSid: 'S-1-5-18'    # SYSTEM — instalação via GPO é esperada
+  condition: (selection_driver_install or selection_driver_load_error) and not filter_legit_admin_install
+falsepositives:
+  - Instalação legítima de drivers de impressão por administradores locais
+  - Implantação de impressoras via GPO (filtrar por SubjectUserSid SYSTEM)
+  - Soluções de gerenciamento de impressão centralizadas (ex: PrinterLogic, PaperCut)
+fields:
+  - EventID
+  - Message
+  - SubjectUserName
+  - SubjectUserSid
+level: high
 
