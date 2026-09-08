@@ -93,17 +93,17 @@ Cada regra é derivada da seção **Detection Opportunities** dos repositórios 
 
 | Regra | Repo de Origem | Seção |
 |-------|---------------|-------|
-| Kerberoasting RC4 | [TOOLS--Kerberoasting](/HKenzoKimura/TOOLS--Kerberoasting) | `$ cat ./detection_opportunities.md` |
-| Cached Credentials | [VULN--Unified_Mitigation_Suite](../VULN--Unified_Mitigation_Suite) | Mitigação ⑤ Cached Logon |
-| PrintNightmare (child + driver) | [CVE-2021-1675](../CVE-2021-1675) | `$ cat ./detection_opportunities.md` |
-| LNK Encoded PowerShell | [MALDEV--Suppy_Chain_Attack](../MALDEV--Suppy_Chain_Attack) | Design Decisions |
-| VBScript COM download | [RE--WhatsApp_Spreader](../RE--WhatsApp_Spreader) | `$ cat ./detection_opportunities.md` |
-| pythonw → chromedriver | [RE--WhatsApp_Spreader](../RE--WhatsApp_Spreader) | `$ cat ./detection_opportunities.md` |
-| SAP NetWeaver upload | [CVE-2025-31324](../CVE-2025-31324) | `$ cat ./detection_opportunities.md` |
-| SPNEGO auth flood | [CVE-2025-47981](../CVE-2025-47981) | `$ cat ./detection_opportunities.md` |
-| Supply chain import | [MALDEV--Suppy_Chain_Attack](../MALDEV--Suppy_Chain_Attack) | `$ cat ./detection_opportunities.md` |
-| SMB null session | [VULN--Unified_Mitigation_Suite](../VULN--Unified_Mitigation_Suite) | Mitigação ① Null Sessions |
-| AutoRun re-enable | [VULN--Unified_Mitigation_Suite](../VULN--Unified_Mitigation_Suite) | Mitigação ⑧ AutoRun |
+| Kerberoasting RC4 | [TOOLS--Kerberoasting](https://github.com/HKenzoKimura/TOOLS--Kerberoasting) | `$ cat ./detection_opportunities.md` |
+| Cached Credentials | [VULN--Unified_Mitigation_Suite](https://github.com/HKenzoKimura/VULN--Unified_Mitigation_Suite) | Mitigação ⑤ Cached Logon |
+| PrintNightmare (child + driver) | [CVE-2021-1675](https://github.com/HKenzoKimura/CVE-2021-1675) | `$ cat ./detection_opportunities.md` |
+| LNK Encoded PowerShell | [MALDEV--Suppy_Chain_Attack](https://github.com/HKenzoKimura/MALDEV--Suppy_Chain_Attack) | Design Decisions |
+| VBScript COM download | [RE--WhatsApp_Spreader](https://github.com/HKenzoKimura/RE--WhatsApp_Spreader) | `$ cat ./detection_opportunities.md` |
+| pythonw → chromedriver | [RE--WhatsApp_Spreader](https://github.com/HKenzoKimura/RE--WhatsApp_Spreader) | `$ cat ./detection_opportunities.md` |
+| SAP NetWeaver upload | [CVE-2025-31324](https://github.com/HKenzoKimura/CVE-2025-31324) | `$ cat ./detection_opportunities.md` |
+| SPNEGO auth flood | [CVE-2025-47981](https://github.com/HKenzoKimura/CVE-2025-47981) | `$ cat ./detection_opportunities.md` |
+| Supply chain import | [MALDEV--Suppy_Chain_Attack](https://github.com/HKenzoKimura/MALDEV--Suppy_Chain_Attack) | `$ cat ./detection_opportunities.md` |
+| SMB null session | [VULN--Unified_Mitigation_Suite](https://github.com/HKenzoKimura/VULN--Unified_Mitigation_Suite) | Mitigação ① Null Sessions |
+| AutoRun re-enable | [VULN--Unified_Mitigation_Suite](https://github.com/HKenzoKimura/VULN--Unified_Mitigation_Suite) | Mitigação ⑧ AutoRun |
 
 ---
 
