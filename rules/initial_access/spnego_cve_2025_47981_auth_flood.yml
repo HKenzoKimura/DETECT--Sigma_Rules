@@ -1,1 +1,60 @@
+title: CVE-2025-47981 — SPNEGO NEGOEX Authentication Flood (Heap Overflow Indicator)
+id: c9d0e1f2-a3b4-5678-cdef-789012345678
+status: test
+description: |
+  Detecta padrão de flood de requisições de autenticação falhas originárias de um único IP
+  externo para múltiplos serviços SPNEGO-dependentes, potencialmente indicativo de exploração
+  da CVE-2025-47981 (heap-based buffer overflow no SPNEGO NEGOEX). CVSS 9.8, wormable.
+  A vulnerabilidade é explorada via pacote NEGOEX malformado enviado antes de qualquer
+  autenticação — o comportamento observável mais confiável é falha de autenticação em volume
+  anormal vinda de um único source IP, especialmente em portas 445/3389/5985.
+  Nota: ausência de exploração ativa confirmada no momento de criação da regra (jul/2025);
+  calibrar threshold com baseline do ambiente.
+references:
+  - https://www.cve.org/CVERecord?id=CVE-2025-47981
+  - https://attack.mitre.org/techniques/T1190/
+  - https://msrc.microsoft.com/update-guide/vulnerability/CVE-2025-47981
+author: HKK
+date: 2025/07/01
+modified: 2025/07/01
+tags:
+  - attack.initial_access
+  - attack.t1190
+  - cve.2025.47981
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_auth_failure:
+    EventID: 4625          # Logon falho
+    LogonType:
+      - 3                  # Network — SMB, WinRM, etc.
+      - 10                 # RemoteInteractive — RDP
+    Status: '0xc000006d'   # STATUS_LOGON_FAILURE — credencial inválida
+    SubStatus:
+      - '0xc0000064'       # Usuário desconhecido
+      - '0xc000006a'       # Senha incorreta
+      - '0xc0000071'       # Senha expirada
+    AuthenticationPackageName|contains:
+      - 'NTLM'
+      - 'Negotiate'        # Negotiate = SPNEGO em uso
+  filter_expected_failures:
+    # Ignorar falhas conhecidas de contas de serviço mal configuradas
+    TargetUserName|endswith: '$'
+    IpAddress: '127.0.0.1'
+  condition: selection_auth_failure and not filter_expected_failures
+             | count() by IpAddress > 20
+timeframe: 1m
+falsepositives:
+  - Scanners de vulnerabilidade autorizados (Qualys, Tenable, CrowdStrike Spotlight)
+  - Usuários com senha expirada tentando múltiplos serviços
+  - Sistemas de monitoramento com credenciais incorretas configuradas
+  - Ataques de password spray (T1110.003) — regra captura ambos; contexto define a prioridade
+fields:
+  - IpAddress
+  - TargetUserName
+  - LogonType
+  - AuthenticationPackageName
+  - WorkstationName
+level: high
 
