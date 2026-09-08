@@ -1,1 +1,45 @@
-
+title: Kerberoasting — Bulk TGS RC4 Harvesting
+id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+status: test
+description: |
+  Detecta atividade de Kerberoasting via múltiplas requisições de TGS com criptografia RC4
+  (0x17) originadas de uma única conta não-máquina em uma janela de 5 minutos.
+  Ferramentas como Rubeus, Impacket GetUserSPNs e PowerView geram esse padrão ao fazer
+  harvesting de hashes de contas de serviço para cracking offline.
+references:
+  - https://attack.mitre.org/techniques/T1558/003/
+  - https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/t1208-kerberoasting
+author: HKK
+date: 2025/07/01
+modified: 2025/07/01
+tags:
+  - attack.credential_access
+  - attack.t1558.003
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4769
+    TicketEncryptionType: '0x17'   # RC4-HMAC — criptografia fraca, downgrade clássico de Kerberoasting
+    Status: '0x0'                  # 0x0 = sucesso; falhas (0x1b, 0x20) são barulho
+  filter_machine_accounts:
+    AccountName|endswith: '$'      # Contas de máquina fazem requisições RC4 legítimas
+  filter_krbtgt:
+    ServiceName|startswith: 'krbtgt'   # TGS para krbtgt é troca de tickets, não harvesting
+  filter_localhost:
+    IpAddress|contains:
+      - '::1'
+      - '127.0.0.1'
+  condition: selection and not 1 of filter_* | count(ServiceName) by AccountName > 5
+timeframe: 5m
+falsepositives:
+  - Aplicações legadas que negociam RC4 com múltiplos serviços (ex: Oracle, SAP NWBC)
+  - Usuários heavy em ambientes sem AES forçado — ajustar threshold para > 15 nesses casos
+  - Varredura de sistemas de monitoramento autenticados com múltiplos SPNs
+fields:
+  - AccountName
+  - ServiceName
+  - IpAddress
+  - TicketEncryptionType
+level: high
