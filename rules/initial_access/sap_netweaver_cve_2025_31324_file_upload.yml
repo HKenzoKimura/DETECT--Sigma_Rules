@@ -1,1 +1,71 @@
+title: CVE-2025-31324 — SAP NetWeaver Visual Composer Unauthenticated File Upload
+id: b8c9d0e1-f2a3-4567-bcde-678901234567
+status: test
+description: |
+  Detecta exploração da CVE-2025-31324 via requisição POST não autenticada ao endpoint
+  /developmentserver/metadatauploader do SAP NetWeaver AS Java. A vulnerabilidade permite
+  upload irrestrito de arquivos arbitrários (incluindo webshells JSP) sem qualquer autenticação.
+  CVSS 10.0 — adicionada ao CISA KEV em abril/2025. A regra cobre tanto o vetor primário
+  (POST ao endpoint) quanto acesso subsequente ao arquivo uploadado (potencial webshell).
+references:
+  - https://www.cve.org/CVERecord?id=CVE-2025-31324
+  - https://me.sap.com/notes/3594142
+  - https://onapsis.com/blog/active-exploitation-of-sap-vulnerability-cve-2025-31324/
+  - https://attack.mitre.org/techniques/T1190/
+  - https://attack.mitre.org/techniques/T1505/003/
+author: HKK
+date: 2025/07/01
+modified: 2025/07/01
+tags:
+  - attack.initial_access
+  - attack.persistence
+  - attack.t1190
+  - attack.t1505.003
+  - cve.2025.31324
+logsource:
+  category: webserver    # SAP ICM / Web Dispatcher access log
+detection:
+  selection_upload:
+    # POST não autenticado para o endpoint vulnerável
+    cs-method: 'POST'
+    cs-uri-stem|contains: '/developmentserver/metadatauploader'
+    cs-uri-query|contains:
+      - 'CONTENTTYPE=MODEL'
+      - 'CONTENTTYPE=model'
+  selection_upload_any:
+    # Cobre variações de query string
+    cs-method: 'POST'
+    cs-uri-stem|contains: '/developmentserver/metadatauploader'
+  filter_authenticated:
+    # Requisições com header de autenticação válido são menos suspeitas (mas não inofensivas)
+    cs-username|contains: 'SAPCPIC'   # Conta de integração SAP legítima conhecida
+  selection_webshell_access:
+    # GET para arquivo JSP criado recentemente em /irj/ — acesso ao webshell após upload
+    cs-method: 'GET'
+    cs-uri-stem|startswith: '/irj/'
+    cs-uri-stem|endswith: '.jsp'
+  selection_rce_indicators:
+    # Acesso ao webshell com parâmetros de comando — RCE em andamento
+    cs-method: 'GET'
+    cs-uri-stem|startswith: '/irj/'
+    cs-uri-query|contains:
+      - 'cmd='
+      - 'exec='
+      - 'command='
+      - 'shell='
+  condition: (selection_upload or selection_upload_any and not filter_authenticated)
+             or selection_webshell_access or selection_rce_indicators
+falsepositives:
+  - Atividade legítima de desenvolvimento no Visual Composer (apenas em ambientes dev/sandbox,
+    nunca em produção; e sempre autenticada)
+  - Scanners de vulnerabilidade que fazem requisições ao endpoint para detecção passiva
+fields:
+  - c-ip
+  - cs-method
+  - cs-uri-stem
+  - cs-uri-query
+  - sc-status
+  - cs-username
+  - cs-bytes
+level: critical
 
